@@ -6,3 +6,4 @@ plotly
 statsmodels
 pingouin
 scikit-learn
+openpyxl
