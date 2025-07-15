@@ -40,13 +40,32 @@ def get_colors(palette_name, n_colors):
     palette = COLOR_PALETTES.get(palette_name, COLOR_PALETTES["Vibrant"])
     return [palette[i % len(palette)] for i in range(n_colors)]
 
+
+with st.sidebar:
+    st.markdown("""
+        <div style="padding: 7px 12px; border-radius: 1px; background-color: #f0f2f6;">
+            <span style="font-weight: 600; font-size: 13px;">
+                📘 Quick Reference – 
+                <a href="https://www.stratascratch.com/blog/a-comprehensive-statistics-cheat-sheet-for-data-science-interviews/" 
+                   target="_blank" 
+                   style="text-decoration: none; color: #1a73e8;">
+                    Statistics Cheat Sheet
+                </a>
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
+
+
+
+
+
 def sidebar_links():
     st.sidebar.markdown("""
     <style>
     .sidebar-bottom-links {
         display: flex;
         flex-direction: column;
-        height: 38vh;
+        height: 32vh;
         justify-content: flex-end;
         padding-bottom: 20px;
     }
@@ -223,6 +242,7 @@ def main():
     - Regression analysis
     - ANOVA
     - Non-parametric tests
+    - Probability Distribution Simulations
     - And much more!
     """)
 
@@ -293,7 +313,9 @@ def main():
                 "Chi-square Tests",
                 "Non-parametric Tests",
                 "Regression Analysis",
-                "Proportion Tests"
+                "Proportion Tests",
+                "Probability Distributions",
+                "Central Limit Theorem"
             ]
         )
 
@@ -330,9 +352,676 @@ def main():
             power_analysis()
         elif analysis_type == "Proportion Tests":
             proportion_tests()
+        elif analysis_type == "Probability Distributions":
+            probability_distributions()
+        elif analysis_type == "Central Limit Theorem":
+            central_limit_theorem()
     else:
         st.info("Please upload a dataset to begin analysis.")
 
+
+# Probability Distribution Simulations
+def probability_distributions():
+    st.header("Probability Distribution Simulations")
+
+    st.markdown("""
+    <div class="test-info">
+    <h4>About Probability Distributions</h4>
+    <p>Probability distributions describe how probabilities are distributed over the values of a random variable. They are fundamental to statistical modeling and hypothesis testing.</p>
+
+    <p><strong>Key Concepts:</strong></p>
+    <ul>
+        <li><strong>PMF (Probability Mass Function):</strong> For discrete distributions, gives probability of each possible value</li>
+        <li><strong>PDF (Probability Density Function):</strong> For continuous distributions, describes relative likelihood</li>
+        <li><strong>CDF (Cumulative Distribution Function):</strong> Probability that X will take a value ≤ x</li>
+        <li><strong>Expected Value:</strong> Long-run average value of repetitions</li>
+        <li><strong>Variance:</strong> Measure of dispersion from the mean</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="example-box">
+    <h4>Practical Applications:</h4>
+    <ul>
+        <li><strong>Bernoulli:</strong> Modeling single yes/no outcomes (coin flips, success/failure)</li>
+        <li><strong>Binomial:</strong> Counting successes in fixed trials (defect rates, survey responses)</li>
+        <li><strong>Poisson:</strong> Modeling rare events over time (customer arrivals, system failures)</li>
+        <li><strong>Geometric:</strong> Time until first success (equipment lifespan, trial-and-error processes)</li>
+    </ul>
+
+    <h4>Example Scenarios:</h4>
+    <ul>
+        <li>A manufacturing plant uses Binomial distribution to model defective items in batches</li>
+        <li>Call centers use Poisson distribution to predict incoming call volumes</li>
+        <li>Quality control uses Geometric distribution to estimate inspection intervals</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    dist_type = st.selectbox(
+        "**Select distribution**",
+        ["Bernoulli", "Binomial", "Poisson", "Geometric"]
+    )
+
+    colors = get_colors(st.session_state.color_palette, 2)
+
+    if dist_type == "Bernoulli":
+        st.subheader("Bernoulli Distribution")
+        st.markdown("""
+        <div class="note">
+        <h4>Notes:</h4>
+        <ul>
+            <li>Models a single trial with two possible outcomes (success=1, failure=0)</li>
+            <li>Parameter p = probability of success</li>
+            <li>Mean = p, Variance = p(1-p)</li>
+            <li>Foundation for many other distributions</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            p = st.slider("Probability of success (p)", 0.0, 1.0, 0.5, 0.01)
+            n_trials = st.slider("Number of trials", 1, 1000, 100)
+        with col2:
+            show_theoretical = st.checkbox("Show theoretical distribution", True)
+            show_cdf = st.checkbox("Show cumulative distribution", False)
+
+        # Simulate Bernoulli trials
+        trials = np.random.binomial(1, p, n_trials)
+        counts = pd.Series(trials).value_counts().sort_index()
+
+        # Create figure
+        fig = go.Figure()
+
+        # Empirical distribution
+        fig.add_trace(go.Bar(
+            x=counts.index,
+            y=counts / n_trials,
+            name='Empirical',
+            marker_color=colors[0],
+            opacity=0.7
+        ))
+
+        # Theoretical distribution
+        if show_theoretical:
+            theoretical = pd.Series({
+                0: (1 - p),
+                1: p
+            })
+            fig.add_trace(go.Scatter(
+                x=theoretical.index,
+                y=theoretical,
+                mode='markers',
+                name='Theoretical',
+                marker=dict(color=colors[1], size=12)
+            ))
+
+        # CDF if requested
+        if show_cdf:
+            empirical_cdf = np.cumsum(counts / n_trials)
+            fig.add_trace(go.Scatter(
+                x=counts.index,
+                y=empirical_cdf,
+                mode='lines+markers',
+                name='Empirical CDF',
+                line=dict(color=colors[0], dash='dot')
+            ))
+
+            if show_theoretical:
+                theoretical_cdf = np.cumsum(theoretical)
+                fig.add_trace(go.Scatter(
+                    x=theoretical.index,
+                    y=theoretical_cdf,
+                    mode='lines+markers',
+                    name='Theoretical CDF',
+                    line=dict(color=colors[1], dash='dot')
+                ))
+
+        fig.update_layout(
+            title=f"Bernoulli Distribution (p={p})",
+            xaxis_title="Outcome",
+            yaxis_title="Probability",
+            xaxis=dict(tickvals=[0, 1], ticktext=["Failure (0)", "Success (1)"]),
+            barmode='group'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Statistics display
+        st.subheader("Distribution Statistics")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Empirical Mean", f"{trials.mean():.4f}")
+            st.metric("Theoretical Mean", f"{p:.4f}")
+        with col2:
+            st.metric("Empirical Variance", f"{trials.var():.4f}")
+            st.metric("Theoretical Variance", f"{p * (1 - p):.4f}")
+
+    elif dist_type == "Binomial":
+        st.subheader("Binomial Distribution")
+        st.markdown("""
+        <div class="note">
+        <h4>Notes:</h4>
+        <ul>
+            <li>Models number of successes in n independent Bernoulli trials</li>
+            <li>Parameters: n = number of trials, p = success probability</li>
+            <li>Mean = np, Variance = np(1-p)</li>
+            <li>Approaches Normal distribution when n is large (Central Limit Theorem)</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            p = st.slider("Probability of success (p)", 0.0, 1.0, 0.5, 0.01)
+            n = st.slider("Number of trials per experiment (n)", 1, 100, 10)
+        with col2:
+            n_experiments = st.slider("Number of experiments", 1, 5000, 1000)
+            show_normal = st.checkbox("Show normal approximation", True)
+
+        # Simulate Binomial experiments
+        experiments = np.random.binomial(n, p, n_experiments)
+
+        # Create figure
+        fig = go.Figure()
+
+        # Histogram of results
+        fig.add_trace(go.Histogram(
+            x=experiments,
+            name='Empirical',
+            marker_color=colors[0],
+            opacity=0.7,
+            histnorm='probability'
+        ))
+
+        # Theoretical PMF
+        x = np.arange(0, n + 1)
+        pmf = stats.binom.pmf(x, n, p)
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=pmf,
+            mode='markers',
+            name='Theoretical PMF',
+            marker=dict(color=colors[1], size=8)
+        ))
+
+        # Normal approximation if requested
+        if show_normal and n * p > 5 and n * (1 - p) > 5:  # Rule of thumb for normal approx
+            mu = n * p
+            sigma = np.sqrt(n * p * (1 - p))
+            x_norm = np.linspace(0, n, 100)
+            norm_pdf = stats.norm.pdf(x_norm, mu, sigma)
+            fig.add_trace(go.Scatter(
+                x=x_norm,
+                y=norm_pdf,
+                mode='lines',
+                name='Normal Approx',
+                line=dict(color='green', dash='dash')
+            ))
+
+        fig.update_layout(
+            title=f"Binomial Distribution (n={n}, p={p})",
+            xaxis_title="Number of Successes",
+            yaxis_title="Probability",
+            bargap=0.1
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Statistics display
+        st.subheader("Distribution Statistics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Empirical Mean", f"{experiments.mean():.4f}")
+            st.metric("Theoretical Mean", f"{n * p:.4f}")
+        with col2:
+            st.metric("Empirical Variance", f"{experiments.var():.4f}")
+            st.metric("Theoretical Variance", f"{n * p * (1 - p):.4f}")
+        with col3:
+            st.metric("Empirical Skewness", f"{stats.skew(experiments):.4f}")
+            st.metric("Theoretical Skewness", f"{(1 - 2 * p) / np.sqrt(n * p * (1 - p)):.4f}")
+
+
+    elif dist_type == "Poisson":
+        st.subheader("Poisson Distribution")
+        st.markdown("""
+        <div class="note">
+        <h4>Notes:</h4>
+        <ul>
+            <li>Models rare events occurring in fixed interval of time/space</li>
+            <li>Parameter λ = average rate of occurrence</li>
+            <li>Mean = λ, Variance = λ</li>
+            <li>Used in queueing theory, reliability analysis, and risk assessment</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            lam = st.slider("Rate parameter (λ)", 0.1, 20.0, 5.0, 0.1)
+            n_experiments = st.slider("Number of experiments", 1, 5000, 1000)
+        with col2:
+            show_diff = st.checkbox("Show difference from theoretical", False)
+            show_poisson_process = st.checkbox("Show Poisson process simulation", False)
+
+        # Simulate Poisson experiments
+        experiments = np.random.poisson(lam, n_experiments)
+
+        # Create main figure
+        fig = go.Figure()
+
+        # Histogram of results
+        fig.add_trace(go.Histogram(
+            x=experiments,
+            name='Empirical',
+            marker_color=colors[0],
+            opacity=0.7,
+            histnorm='probability'
+        ))
+
+        # Theoretical PMF
+        x = np.arange(0, int(lam * 3) + 1)
+        pmf = stats.poisson.pmf(x, lam)
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=pmf,
+            mode='markers',
+            name='Theoretical PMF',
+            marker=dict(color=colors[1], size=8)
+        ))
+
+        fig.update_layout(
+            title=f"Poisson Distribution (λ={lam})",
+            xaxis_title="Number of Events",
+            yaxis_title="Probability",
+            bargap=0.1
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Difference plot if requested
+        if show_diff:
+            # Calculate empirical PMF first
+            empirical_pmf = np.array([np.mean(experiments == k) for k in x])
+            pmf = stats.poisson.pmf(x, lam)  # Recalculate to be safe
+            diff = empirical_pmf - pmf
+
+            fig_diff = go.Figure()
+            fig_diff.add_trace(go.Bar(
+                x=x,
+                y=diff,
+                name='Difference (Empirical - Theoretical)',
+                marker_color='orange'
+            ))
+            fig_diff.update_layout(
+                title="Difference Between Empirical and Theoretical PMF",
+                xaxis_title="Number of Events",
+                yaxis_title="Probability Difference",
+                bargap=0.1
+            )
+            st.plotly_chart(fig_diff, use_container_width=True)
+
+        # Poisson process simulation if requested
+        if show_poisson_process:
+            st.subheader("Poisson Process Simulation")
+        time_period = st.slider("Time period (T)", 1.0, 10.0, 5.0, 0.1)
+
+        # Generate event times
+        event_times = np.cumsum(np.random.exponential(1 / lam, size=int(lam * time_period * 2)))
+        event_times = event_times[event_times <= time_period]
+
+        # Create timeline plot
+        fig_process = go.Figure()
+        for i, t in enumerate(event_times):
+            fig_process.add_trace(go.Scatter(
+                x=[t, t],
+                y=[0, 1],
+                mode='lines',
+                line=dict(color=colors[i % len(colors)], width=2),
+                showlegend=False
+            ))
+
+        fig_process.update_layout(
+            title=f"Poisson Process Timeline (λ={lam}, T={time_period})",
+            xaxis_title="Time",
+            yaxis=dict(showticklabels=False),
+            height=200
+        )
+        st.plotly_chart(fig_process, use_container_width=True)
+
+        st.write(f"Number of events in {time_period} time units: {len(event_times)}")
+        st.write(f"Average time between events: {np.mean(np.diff(event_times)):.4f} (expected: {1 / lam:.4f})")
+
+        # Statistics display
+        st.subheader("Distribution Statistics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Empirical Mean", f"{experiments.mean():.4f}")
+            st.metric("Theoretical Mean", f"{lam:.4f}")
+        with col2:
+            st.metric("Empirical Variance", f"{experiments.var():.4f}")
+            st.metric("Theoretical Variance", f"{lam:.4f}")
+        with col3:
+            st.metric("Empirical Skewness", f"{stats.skew(experiments):.4f}")
+            st.metric("Theoretical Skewness", f"{1 / np.sqrt(lam):.4f}")
+
+
+    elif dist_type == "Geometric":
+        st.subheader("Geometric Distribution")
+        st.markdown("""
+        <div class="note">
+        <h4>Notes:</h4>
+        <ul>
+            <li>Models number of trials until first success</li>
+            <li>Parameter p = probability of success on each trial</li>
+            <li>Mean = 1/p, Variance = (1-p)/p²</li>
+            <li>Memoryless property: P(X>m+n|X>m) = P(X>n)</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            p = st.slider("Probability of success (p)", 0.01, 1.0, 0.5, 0.01)
+            n_experiments = st.slider("Number of experiments", 1, 5000, 1000)
+        with col2:
+            show_memoryless = st.checkbox("Demonstrate memoryless property", True)
+            max_trials = st.slider("Maximum trials to show", 1, 50, 20)
+
+        # Simulate Geometric experiments
+        experiments = np.random.geometric(p, n_experiments)
+
+        # Create figure
+        fig = go.Figure()
+
+        # Histogram of results (limited to max_trials)
+        valid_experiments = experiments[experiments <= max_trials]
+        fig.add_trace(go.Histogram(
+            x=valid_experiments,
+            name='Empirical',
+            marker_color=colors[0],
+            opacity=0.7,
+            histnorm='probability'
+        ))
+
+        # Theoretical PMF
+        x = np.arange(1, max_trials + 1)
+        pmf = stats.geom.pmf(x, p)
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=pmf,
+            mode='markers',
+            name='Theoretical PMF',
+            marker=dict(color=colors[1], size=8)
+        ))
+
+        fig.update_layout(
+            title=f"Geometric Distribution (p={p})",
+            xaxis_title="Number of Trials Until First Success",
+            yaxis_title="Probability",
+            bargap=0.1
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Memoryless property demonstration
+        if show_memoryless:
+            st.subheader("Memoryless Property Demonstration")
+        m = st.slider("Given already waited m trials without success", 1, 10, 2)
+
+        # Filter experiments where X > m
+        conditioned = experiments[experiments > m]
+        additional_wait = conditioned - m
+
+        # Compare distributions
+        fig_mem = make_subplots(rows=1, cols=2, subplot_titles=[
+            f"Original P(X > {m})",
+            f"Conditional P(X > {m} + n | X > {m})"
+        ])
+
+        # Original distribution beyond m
+        fig_mem.add_trace(go.Histogram(
+            x=experiments[experiments > m],
+            name='Original',
+            marker_color=colors[0],
+            opacity=0.7,
+            histnorm='probability'
+        ), row=1, col=1)
+
+        # Conditional distribution
+        fig_mem.add_trace(go.Histogram(
+            x=additional_wait,
+            name='Conditional',
+            marker_color=colors[1],
+            opacity=0.7,
+            histnorm='probability'
+        ), row=1, col=2)
+
+        fig_mem.update_layout(
+            title=f"Memoryless Property: P(X>{m}+n|X>{m}) = P(X>n)",
+            showlegend=False,
+            bargap=0.1
+        )
+        st.plotly_chart(fig_mem, use_container_width=True)
+
+        # Compare probabilities
+        st.write(f"P(X > {m}) = {len(experiments[experiments > m]) / len(experiments):.4f}")
+        st.write(f"P(X > {m + 2}) = {len(experiments[experiments > m + 2]) / len(experiments):.4f}")
+        st.write(f"P(X > 2) = {len(experiments[experiments > 2]) / len(experiments):.4f}")
+        st.write(
+            f"P(X > {m + 2} | X > {m}) = {len(experiments[experiments > m + 2]) / len(experiments[experiments > m]):.4f} ≈ P(X > 2)")
+
+        # Statistics display
+        st.subheader("Distribution Statistics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Empirical Mean", f"{experiments.mean():.4f}")
+            st.metric("Theoretical Mean", f"{1 / p:.4f}")
+        with col2:
+            st.metric("Empirical Variance", f"{experiments.var():.4f}")
+            st.metric("Theoretical Variance", f"{(1 - p) / (p ** 2):.4f}")
+        with col3:
+            st.metric("Empirical P(X ≤ 5)", f"{np.mean(experiments <= 5):.4f}")
+            st.metric("Theoretical P(X ≤ 5)", f"{1 - (1 - p) ** 5:.4f}")
+
+        # Central Limit Theorem Demonstration
+
+
+def central_limit_theorem():
+    st.header("Central Limit Theorem Demonstration")
+
+    st.markdown("""
+    <div class="test-info">
+    <h4>About the Central Limit Theorem (CLT)</h4>
+    <p>The CLT states that the sampling distribution of the mean of any independent, random variable 
+    will be normal or nearly normal, if the sample size is large enough.</p>
+
+    <p><strong>Key Implications:</strong></p>
+    <ul>
+        <li>Works regardless of the population distribution shape</li>
+        <li>Sample means will be approximately normally distributed</li>
+        <li>Mean of sampling distribution = Population mean (μ)</li>
+        <li>Standard error = σ/√n (σ = population standard deviation)</li>
+    </ul>
+
+    <p><strong>Rule of Thumb:</strong> n ≥ 30 for reasonable approximation</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="example-box">
+    <h4>Practical Applications:</h4>
+    <ul>
+        <li>Justifies use of normal distribution in many statistical tests</li>
+        <li>Foundation for confidence intervals and hypothesis testing</li>
+        <li>Quality control (control charts)</li>
+        <li>Risk management in finance</li>
+    </ul>
+
+    <h4>Example Scenarios:</h4>
+    <ul>
+        <li>A factory uses CLT to monitor average product weights, even when individual weights are skewed</li>
+        <li>Pollsters use CLT to estimate sampling error in election polls</li>
+        <li>Financial analysts assume normal distribution for portfolio returns over time</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        pop_dist = st.selectbox(
+            "**Population distribution**",
+            ["Uniform", "Exponential", "Poisson", "Binomial", "Lognormal", "Weibull"],
+            index=1
+        )
+        sample_size = st.slider("Sample size (n)", 1, 100, 30)
+    with col2:
+        n_samples = st.slider("Number of samples", 10, 10000, 1000)
+        show_population = st.checkbox("Show population distribution", True)
+
+    # Generate population data based on selected distribution
+    if pop_dist == "Uniform":
+        pop_data = np.random.uniform(0, 100, 100000)
+        pop_name = "Uniform(0,100)"
+        true_mean = 50
+        true_std = np.sqrt((100 ** 2) / 12)  # (b-a)²/12
+    elif pop_dist == "Exponential":
+        pop_data = np.random.exponential(1, 100000)
+        pop_name = "Exponential(1)"
+        true_mean = 1
+        true_std = 1
+    elif pop_dist == "Poisson":
+        lam = 5
+        pop_data = np.random.poisson(lam, 100000)
+        pop_name = f"Poisson({lam})"
+        true_mean = lam
+        true_std = np.sqrt(lam)
+    elif pop_dist == "Binomial":
+        n, p = 10, 0.5
+        pop_data = np.random.binomial(n, p, 100000)
+        pop_name = f"Binomial({n},{p})"
+        true_mean = n * p
+        true_std = np.sqrt(n * p * (1 - p))
+    elif pop_dist == "Lognormal":
+        pop_data = np.random.lognormal(0, 1, 100000)
+        pop_name = "Lognormal(0,1)"
+        true_mean = np.exp(0 + 0.5)  # exp(μ + σ²/2)
+        true_std = np.sqrt((np.exp(1) - 1) * np.exp(1))  # sqrt((e^σ²-1)e^{2μ+σ²})
+    elif pop_dist == "Weibull":
+        a = 1.5
+        pop_data = np.random.weibull(a, 100000)
+        pop_name = f"Weibull({a})"
+        true_mean = stats.gamma(1 + 1 / a)  # Γ(1 + 1/a)
+        true_std = np.sqrt(stats.gamma(1 + 2 / a) - (stats.gamma(1 + 1 / a)) ** 2)
+
+    # Sample means
+    sample_means = [np.mean(np.random.choice(pop_data, sample_size)) for _ in range(n_samples)]
+    colors = ['#1f77b4', '#ff7f0e']
+    # Create subplots
+    fig = make_subplots(
+        rows=1,
+        cols=2 if show_population else 1,
+        subplot_titles=[
+            "Sampling Distribution of Mean",
+            "Population Distribution"
+        ] if show_population else ["Sampling Distribution of Mean"]
+    )
+
+    # Plot sampling distribution
+    fig.add_trace(
+        go.Histogram(
+            x=sample_means,
+            name='Sample Means',
+            marker_color=colors[0],
+            opacity=0.7,
+            histnorm='probability density'
+        ),
+        row=1, col=1
+    )
+
+    # Add normal curve fit
+    x = np.linspace(min(sample_means), max(sample_means), 100)
+    pdf = stats.norm.pdf(x, np.mean(sample_means), np.std(sample_means))
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=pdf,
+            mode='lines',
+            name='Normal Fit',
+            line=dict(color=colors[1], width=2)
+        ),
+        row=1, col=1
+    )
+
+    # Plot population distribution if requested
+    if show_population:
+        fig.add_trace(
+            go.Histogram(
+                x=pop_data,
+                name='Population',
+                marker_color=colors[0],
+                opacity=0.7,
+                histnorm='probability density'
+            ),
+            row=1, col=2
+        )
+
+    fig.update_layout(
+        title=f"CLT Demonstration: {pop_name}, n={sample_size}",
+        showlegend=True,
+        bargap=0.1,
+        height=400
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Statistics display
+    st.subheader("Key Statistics")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Population Mean (μ)", f"{true_mean:.4f}")
+        st.metric("Mean of Sample Means", f"{np.mean(sample_means):.4f}")
+    with col2:
+        st.metric("Population SD (σ)", f"{true_std:.4f}")
+        st.metric("SD of Sample Means", f"{np.std(sample_means):.4f}")
+    with col3:
+        st.metric("Theoretical SE (σ/√n)", f"{true_std / np.sqrt(sample_size):.4f}")
+        st.metric("Empirical SE", f"{np.std(pop_data) / np.sqrt(sample_size):.4f}")
+
+    # QQ plot for normality check
+    st.subheader("Normality Assessment (Q-Q Plot)")
+    qq = stats.probplot(sample_means, dist="norm")
+    x_qq = np.array([qq[0][0][0], qq[0][0][-1]])
+
+    fig_qq = go.Figure()
+    fig_qq.add_trace(go.Scatter(
+        x=qq[0][0],
+        y=qq[0][1],
+        mode='markers',
+        name='Sample Quantiles',
+        marker=dict(color=colors[0])
+    ))
+    fig_qq.add_trace(go.Scatter(
+        x=x_qq,
+        y=qq[1][1] + qq[1][0] * x_qq,
+        mode='lines',
+        name='Normal Reference',
+        line=dict(color=colors[1])
+    ))
+    fig_qq.update_layout(
+        title="Q-Q Plot of Sample Means",
+        xaxis_title="Theoretical Quantiles",
+        yaxis_title="Sample Quantiles"
+    )
+    st.plotly_chart(fig_qq, use_container_width=True)
+
+    # Interpretation
+    st.subheader("Interpretation")
+    if sample_size >= 30:
+        st.success("""
+        The sampling distribution approximates a normal distribution, as predicted by the CLT.
+        The empirical standard error closely matches the theoretical prediction (σ/√n).
+        """)
+    else:
+        st.warning("""
+        With small sample sizes, the normal approximation may not be perfect. 
+        For highly non-normal populations, consider larger samples (n ≥ 30).
+        """)
 
 
 def descriptive_statistics(numeric_cols):
